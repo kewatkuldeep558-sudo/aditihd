@@ -1,0 +1,136 @@
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum AppRole {
+  admin
+  editor
+}
+
+// -------- ROLE MODEL (ALAG TABLE) --------
+model Role {
+  id    String  @id @default(auto()) @map("_id") @db.ObjectId
+  name  AppRole @unique
+
+  users Users[]
+}
+
+// -------- USERS MODEL --------
+model Users {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+
+  name      String
+  email     String   @unique
+  password  String
+
+  roleId    String   @db.ObjectId      // 👈 USER ME ROLE ID
+
+  role      Role     @relation(fields: [roleId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  profile   Profile?
+}
+
+// -------- PROFILE MODEL --------
+model Profile {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+
+  userId       String   @unique @db.ObjectId
+  displayName  String
+  email        String
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user         Users    @relation(fields: [userId], references: [id])
+
+  properties   Property[]
+}
+
+// -------- PROPERTY STATUS TABLE --------
+model PropertyStatus {
+  id     String    @id @default(auto()) @map("_id") @db.ObjectId
+  name   String    @unique
+
+  properties Property[]
+}
+
+// -------- PROPERTY TYPE TABLE --------
+model PropertyType {
+  id     String    @id @default(auto()) @map("_id") @db.ObjectId
+  name   String    @unique
+
+  properties Property[]
+}
+
+
+model Property {
+  id               String          @id @default(auto()) @map("_id") @db.ObjectId  
+
+  title            String
+  location         String
+  city             String
+  price            Float
+  priceLabel       String
+
+  beds             Int             @default(0)
+  baths            Int             @default(0)
+  area             String
+
+  description      String          @default("")
+  features         String[]
+  featuredImageUrl String?
+
+  // ✅ Relation to Status
+  statusId         String?         @db.ObjectId
+  status           PropertyStatus? @relation(fields: [statusId], references: [id])
+
+  // ✅ Relation to Type
+  typeId           String?         @db.ObjectId
+  type             PropertyType?   @relation(fields: [typeId], references: [id])
+
+  createdByUserId  String?         @db.ObjectId
+  creator          Profile?        @relation(fields: [createdByUserId], references: [id])
+
+  images           PropertyImage[]
+
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+}
+
+
+// -------- PROPERTY IMAGE MODEL --------
+model PropertyImage {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+
+  propertyId   String   @db.ObjectId
+  imageUrl     String
+  publicId String?   // 🔥 ADD THIS (Cloudinary ID)
+
+  displayOrder Int      @default(0)
+  isFeatured   Boolean  @default(false)
+
+  createdAt    DateTime @default(now())
+
+  property     Property @relation(fields: [propertyId], references: [id])
+}
+
+
+
+model Enquiry {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  phone     String
+  email     String
+  message   String
+  createdAt DateTime @default(now())
+}
+
+
